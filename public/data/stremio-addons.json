@@ -1,0 +1,534 @@
+{
+  "version": 2,
+
+  "site": {
+    "name": "Stremio, Sorted",
+    "domain": "stremio-setup.madebytrap.lol",
+    "tagline": "Enter an email, pick a vibe, tap go. Stremio sets itself up."
+  },
+
+  "meta": {
+    "maintainer": "trap",
+    "updated": "2026-06-26",
+    "region_default": "en / ZA",
+    "audited": "2026-06-26 — every baked manifest probed live + CORS:* EXCEPT ppvstreams (host dead, demoted to needs_url).",
+    "consumed_by": "Frontend public/js/app.js only. The Go sidecar (stremio-setup-svc) does NOT read this file — account creation + addonCollectionSet happen client-side in the browser."
+  },
+
+  "apps": {
+    "web_url": "https://web.stremio.com/#/intro?form=login",
+    "platforms": [
+      { "label": "Windows", "emoji": "🪟", "url": "https://www.stremio.com/downloads" },
+      { "label": "macOS", "emoji": "🍎", "url": "https://www.stremio.com/downloads" },
+      { "label": "Android (APK)", "emoji": "🤖", "url": "https://www.stremio.com/downloads" },
+      { "label": "Google Play", "emoji": "▶️", "url": "https://play.google.com/store/apps/details?id=com.stremio.one" },
+      { "label": "Android TV", "emoji": "📺", "url": "https://play.google.com/store/apps/details?id=com.stremio.one" },
+      { "label": "Stremio Web", "emoji": "🌐", "url": "https://web.stremio.com/#/intro?form=login" }
+    ],
+    "ios": {
+      "vlc_url": "https://apps.apple.com/app/vlc-media-player/id650377962",
+      "web_url": "https://web.stremio.com/#/intro?form=login",
+      "note": "Apple blocks Stremio from the App Store, so on iPhone/iPad you run Stremio in Safari and play through VLC. A debrid key makes this much smoother (streams become direct links Safari can play on its own).",
+      "steps": [
+        "Install VLC (free) from the App Store.",
+        "In Safari, open web.stremio.com and log in with the email & password above.",
+        "Tap Share → ‘Add to Home Screen’ so it opens like a real app.",
+        "In Stremio Web, open Settings and turn on ‘Play in external player’.",
+        "Pick a title and tap a stream — when prompted, open it in VLC. (Direct & debrid links also play in Safari itself.)"
+      ]
+    }
+  },
+
+  "_notes": {
+    "schema": "Add-ons are defined once under `addons` and referenced by id from `packs`, `baseline`, and the toggles. The frontend fetches this file and builds the Stremio addon collection in-browser.",
+    "manifest_vs_assemble": "Most add-ons carry a static `manifest`. Torrentio instead carries `assemble` (base + providers + quality_modes); the frontend builds its URL and appends the chosen debrid param/key when supplied.",
+    "needs_url": "needs_url:true means NO single shareable manifest (config-encoded or per-user key). These never auto-apply — they render as 'Configure & install' link-outs using `configure_url`.",
+    "protected": "Cinemeta, OpenSubtitles v3 and Local Files are Stremio defaults flagged protected. addonCollectionSet REPLACES the whole collection, so the frontend preserves protected defaults and only prunes the ones listed under `defaults`.",
+    "dropped": "AniList Stream (aniliststream.edmit.in/<JWT>/manifest.json) was DROPPED — the URL embedded trap's personal AniList auth token, unsafe to ship publicly. Anime is covered by anime-kitsu + anime-catalogs + torrentio (nyaa providers)."
+  },
+
+  "_todo": [
+    "iptv-org: resolve the Savi configure manifest (IPTV-org + ZA), then remove needs_url.",
+    "alldebrid + premiumize: signup_url referral ids are placeholders.",
+    "rottentomatoes: rpdb_key is empty — add a free RPDB key (rpdb.to) for poster ratings.",
+    "sports: REMOVED as a parent pack 2026-06-26 — no working free sports addon (ppvstreams dead: baby-beamup DNS gone + vercel 402). MediaFusion (DaddyLive sports, debrid+configure) remains available in Advanced. Restore a Sports pack only when a working free addon exists.",
+    "kids: exclusive pack. Curated catalog (kids-addon) public instance is currently 404 — SELF-HOST github.com/manuelford/stremio-kids-addon and update its manifest. Until then Kids = public-domain-movies (safe classics that play) + protected defaults. Note: Cinemeta is an unremovable protected default, so its (unfiltered) catalogs/search remain visible — Kids is 'safe-curated', not a hard parental lock.",
+    "advanced extras: Comet, MediaFusion, AIOStreams are intentionally in NO pack — they surface only in 'Advanced: pick individual add-ons' for debrid power users.",
+    "6 presets total (2026-06-26 SHIP): movies-tv, anime, niche, premium-4k, extreme-horror, adult(gated). Sports + Live TV removed (no working free addon). Documentaries + Kids removed for initial ship (their curated catalogs are dead/self-host; without them Documentaries=redundant-vs-baseline and Kids can't deliver curated kid-safe). Re-add both when self-hosted. All 6 shipped presets functionally verified: catalogs return items AND titles return playable streams.",
+    "documentaries preset: catalog is needs_url/self-host (no reliable free no-config tt-id docs catalog exists). 4k-premium = Torrentio config (no new host). extreme-horror = Scary Only (verified). ",
+    "filters: only Torrentio-supported ones shipped (Result style=sort, Max quality=qualityfilter resolution cap, both verified). HEVC/codec + audio-language + private trackers NOT shippable via Torrentio URL -> documented, route users to AIOStreams.",
+    "adult playability (tested 2026-06-26): hentai-roxxy = direct free; tpb-4k-porn/adult-stremio/porn-tube = torrents (P2P or debrid); OnlyPorn REMOVED (returned zero streams). Porn plays best with a debrid key.",
+    "cam: chaturbate-cam + stripchat-cam are configure-based (needs_url link-outs); once configured they serve live HLS. Resolve their generated manifests to graduate to auto-apply.",
+    "comet/mediafusion/aiostreams: stay configure link-outs (per-user debrid key cannot be pre-baked).",
+    "anime: direct-stream addons (Consumet/HiAnime/AnimeStream) rejected 2026-06-26 — Consumet instances returned empty catalog/500, HiAnime+AnimeStream are self-host-only (no stable public manifest). Anime streaming uses torrentio-anime (Nyaa, verified 50 streams). animeo = AniList tracking link-out.",
+    "anime-catalogs: only MAL lists enabled; the addon also supports AniList/AniDB/Kitsu/LiveChart lists — could enrich the config URL later."
+  ],
+
+  "debrid": {
+    "enabled": true,
+    "default": "realdebrid",
+    "note": "Optional. Free public-torrent streaming works without any of this. Provide a key for instant cached streams.",
+    "providers": {
+      "realdebrid": {
+        "label": "Real-Debrid",
+        "recommended": true,
+        "torrentio_param": "realdebrid",
+        "signup_url": "https://real-debrid.com/?id=19347258",
+        "blurb": "~€3/mo. Best Stremio compatibility. (trap referral)"
+      },
+      "alldebrid": {
+        "label": "AllDebrid",
+        "recommended": false,
+        "torrentio_param": "alldebrid",
+        "signup_url": "https://alldebrid.com/",
+        "blurb": "Cash-affiliate alternative, more file hosts."
+      },
+      "premiumize": {
+        "label": "Premiumize",
+        "recommended": false,
+        "torrentio_param": "premiumize",
+        "signup_url": "https://www.premiumize.me/",
+        "blurb": "Cloud + Usenet + filehosts. Best for adult/niche search."
+      }
+    }
+  },
+
+  "addons": {
+    "cinemeta": {
+      "name": "Cinemeta",
+      "blurb": "Official movie & series metadata.",
+      "categories": ["meta"],
+      "adult": false,
+      "reliability": "high",
+      "protected": true,
+      "manifest": "https://v3-cinemeta.strem.io/manifest.json"
+    },
+    "opensubtitles": {
+      "name": "OpenSubtitles v3",
+      "blurb": "Subtitles (English-focused defaults).",
+      "categories": ["subtitles"],
+      "adult": false,
+      "reliability": "high",
+      "protected": true,
+      "manifest": "https://opensubtitles-v3.strem.io/manifest.json"
+    },
+
+    "torrentio": {
+      "name": "Torrentio",
+      "blurb": "The main free streaming source — scrapes public torrents.",
+      "categories": ["movies", "series", "anime"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "assemble": {
+        "base": "https://torrentio.strem.fun/",
+        "providers": "yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex",
+        "sort": { "balanced": "seeders", "quality": "qualitysize", "quantity": "seeders" },
+        "qualityfilter_base": "cam,unknown",
+        "_build": "JS: base+'providers='+providers+'|sort='+sort[style]+'|qualityfilter='+merge(qualityfilter_base, style=='quality'?'480p':'', maxQuality.exclude)+(style=='quality'?'|limit=10':'')+(debridKey?'|'+param+'='+key:'')+'/manifest.json'"
+      },
+      "manifest": "https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex|sort=seeders|qualityfilter=cam,unknown/manifest.json"
+    },
+
+    "imdb-catalogs": {
+      "name": "IMDb Catalogs",
+      "blurb": "Browse by IMDb lists & charts.",
+      "categories": ["catalog", "ratings"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://1fe84bc728af-imdb-catalogs.baby-beamup.club/manifest.json"
+    },
+    "rottentomatoes": {
+      "name": "Rotten Tomatoes (RPDB)",
+      "blurb": "Ratings on posters. Add a free RPDB key for full poster ratings.",
+      "categories": ["ratings"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://7a82163c306e-rottentomatoes.baby-beamup.club/%7B%22rpdb_key%22%3A%22%22%7D/manifest.json",
+      "config_note": "rpdb_key is empty — poster ratings won't render until trap drops a free RPDB key in. Get one at rpdb.to."
+    },
+    "streaming-catalogs": {
+      "name": "Streaming Catalogs",
+      "blurb": "What's on Netflix, Disney+, Prime, HBO, Apple TV+, Paramount+, Peacock, Hulu, Crunchyroll.",
+      "categories": ["catalog"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://7a82163c306e-stremio-netflix-catalog-addon.baby-beamup.club/bmZ4LGRucCxhbXAsYXRwLGhibSxwbXAscGNwLGhsdSxjcnU6OjoxNzM1MzU5NTI4MjYx/manifest.json"
+    },
+    "torrent-catalogs": {
+      "name": "Torrent Catalogs",
+      "blurb": "Trending/popular catalogs sourced from torrent sites.",
+      "categories": ["catalog"],
+      "adult": false,
+      "reliability": "medium",
+      "protected": false,
+      "manifest": "https://torrent-catalogs.strem.fun/manifest.json"
+    },
+
+    "anime-kitsu": {
+      "name": "Anime Kitsu",
+      "blurb": "Anime catalog + metadata (Kitsu).",
+      "categories": ["anime", "meta", "catalog"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://anime-kitsu.strem.fun/manifest.json"
+    },
+    "anime-catalogs": {
+      "name": "Anime Catalogs",
+      "blurb": "MyAnimeList top / airing / popular / most-favorited charts.",
+      "categories": ["anime", "catalog"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://1fe84bc728af-stremio-anime-catalogs.baby-beamup.club/%7B%22search%22%3A%22on%22%2C%22myanimelist_top-all-time%22%3A%22on%22%2C%22myanimelist_top-airing%22%3A%22on%22%2C%22myanimelist_top-series%22%3A%22on%22%2C%22myanimelist_top-movies%22%3A%22on%22%2C%22myanimelist_popular%22%3A%22on%22%2C%22myanimelist_most-favorited%22%3A%22on%22%7D/manifest.json"
+    },
+    "torrentio-anime": {
+      "name": "Torrentio — Anime",
+      "blurb": "Anime-tuned streaming: Nyaa, TokyoTosho, AniDex, HorribleSubs (subs, dubs, batches). Plays P2P, instant with a debrid key.",
+      "categories": ["anime"],
+      "adult": false,
+      "reliability": "high",
+      "debrid_boost": true,
+      "protected": false,
+      "assemble": {
+        "base": "https://torrentio.strem.fun/",
+        "providers": "nyaasi,tokyotosho,anidex,horriblesubs",
+        "sort": { "balanced": "qualitysize", "quality": "qualitysize", "quantity": "seeders" },
+        "qualityfilter_base": "cam,unknown",
+        "_build": "same assembler as torrentio; anime-only providers"
+      },
+      "manifest": "https://torrentio.strem.fun/providers=nyaasi,tokyotosho,anidex,horriblesubs|sort=qualitysize|qualityfilter=cam,unknown/manifest.json",
+      "config_note": "Playability-tested 2026-06-26: kitsu:7442:1 (Attack on Titan ep1) -> 50 torrent streams via Nyaa providers. Resolves Anime Kitsu's kitsu: ids."
+    },
+    "animeo": {
+      "name": "AniList Tracking (animeo)",
+      "blurb": "Auto-updates your AniList watch progress as you watch — for fans who keep their list current.",
+      "categories": ["anime"],
+      "adult": false,
+      "reliability": "medium",
+      "protected": false,
+      "needs_url": true,
+      "configure_url": "https://7a625ac658ec-animeo.baby-beamup.club/configure",
+      "config_note": "AniList progress sync. configurationRequired:true (per-user AniList OAuth) -> configure link-out, not auto-applied. id com.jenryk.animeo."
+    },
+
+    "iptv-org": {
+      "name": "IPTV (free public channels)",
+      "blurb": "Thousands of free public live channels (IPTV-org), incl. South African free-to-air. No DSTV premium.",
+      "categories": ["live", "tv"],
+      "adult": false,
+      "reliability": "medium",
+      "protected": false,
+      "needs_url": true,
+      "dead": true,
+      "configure_url": "https://stremio-addons.net/addons?categories=live+tv",
+      "config_note": "Live-tv pack REMOVED 2026-06-26: no working free public IPTV addon found (Savi baby-beamup host DNS-dead, USA TV dead, tsaridas=Greece-only/empty, TvVoo=self-host/EU-only/no ZA). Marked dead so it's hidden from Advanced. Re-add a 'live-tv' pack pointing here the moment a working free IPTV manifest exists, or wire YourIPTV/Xtremio if trap has an M3U/Xtream subscription."
+    },
+    "ppvstreams": {
+      "name": "PPVStreams (live sports)",
+      "blurb": "Live sports & PPV events (football, NFL, NBA, wrestling, darts...). Based on PPV Land.",
+      "categories": ["live", "sports"],
+      "adult": false,
+      "reliability": "low",
+      "protected": false,
+      "needs_url": true,
+      "dead": true,
+      "configure_url": "https://github.com/jpants36/stremio-addon-ppvstreams",
+      "config_note": "DEAD as of 2026-06-26 audit: baby-beamup host no longer resolves, vercel instance returns 402. No working public manifest. Self-host from the GitHub repo or replace. Sports currently leans on mediafusion."
+    },
+
+    "comet": {
+      "name": "Comet",
+      "blurb": "Debrid-first streaming, multi-IP friendly. Best with a debrid key.",
+      "categories": ["movies", "series"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "debrid_only": true,
+      "needs_url": true,
+      "configure_url": "https://comet.elfhosted.com",
+      "config_note": "ElfHosted public instance. Config-encoded manifest; only useful with a debrid key."
+    },
+    "mediafusion": {
+      "name": "MediaFusion",
+      "blurb": "Universal addon — torrents, cloud, and live sports via DaddyLive. Strong with debrid.",
+      "categories": ["movies", "series", "live", "sports"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "needs_url": true,
+      "configure_url": "https://mediafusion.elfhosted.com",
+      "config_note": "ElfHosted public instance. Config-encoded manifest. The durable live-sports source (DaddyLive) now that ppvstreams is dead."
+    },
+    "aiostreams": {
+      "name": "AIOStreams",
+      "blurb": "Power-user meta-addon — merges Torrentio, Comet, MediaFusion & 80+ sources into one list. Needs a debrid key.",
+      "categories": ["movies", "series", "anime"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "debrid_only": true,
+      "needs_url": true,
+      "configure_url": "https://aiostreams.elfhosted.com",
+      "config_note": "ElfHosted public instance. Config-encoded, debrid-first. Advanced/Custom only — intentionally not in any pack."
+    },
+
+    "torrentio-4k": {
+      "name": "4K & Premium streams",
+      "blurb": "Highest-quality releases only — 4K / 1080p BluRay & REMUX, biggest files first. Big files: a debrid key is strongly recommended.",
+      "categories": ["movies", "series", "quality"],
+      "adult": false,
+      "reliability": "high",
+      "debrid_boost": true,
+      "protected": false,
+      "assemble": {
+        "base": "https://torrentio.strem.fun/",
+        "providers": "yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl",
+        "sort": { "balanced": "qualitysize", "quality": "qualitysize", "quantity": "qualitysize" },
+        "qualityfilter_base": "cam,scr,unknown,480p,720p",
+        "_build": "premium variant — strips everything below 1080p; always sort by quality/size. Same JS assembler as torrentio."
+      },
+      "manifest": "https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl|sort=qualitysize|qualityfilter=cam,scr,unknown,480p,720p/manifest.json",
+      "config_note": "Torrentio config preset (no new host). Verified 2026-06-26: qualityfilter excludes <1080p; plays via Stremio P2P, instant + smoother with debrid (4K files are large)."
+    },
+    "scary-only": {
+      "name": "Scary Only — horror catalogs",
+      "blurb": "52 horror catalogs by subgenre (slasher, gore, found-footage, cosmic, zombie...) incl. a South-Africa trending row. Plays via your streaming sources.",
+      "categories": ["horror", "catalog"],
+      "adult": false,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://addon.scary.network/manifest.json",
+      "config_note": "Playability-tested 2026-06-26: imdb tt ids, 52 catalogs, CORS:*, configurationRequired:false; sample title -> 46 Torrentio streams (plays via baseline Torrentio)."
+    },
+    "documentaries": {
+      "name": "Documentaries catalog",
+      "blurb": "A curated documentary discovery row. Docs still play via your streaming sources.",
+      "categories": ["documentary", "catalog"],
+      "adult": false,
+      "reliability": "low",
+      "protected": false,
+      "needs_url": true,
+      "dead": true,
+      "configure_url": "https://stremio-addons.net/addons?categories=documentary",
+      "config_note": "Documentaries PACK REMOVED 2026-06-26: with no working catalog it added nothing beyond baseline (redundant). Hidden. SELF-HOST jaruba/stremio-imdb-list -> a public IMDb documentary list (tt ids, plays via Torrentio), set its manifest, then restore a 'documentaries' pack. Docs remain searchable/playable via baseline meanwhile."
+    },
+
+    "public-domain-movies": {
+      "name": "Public Domain Movies",
+      "blurb": "100% legal public-domain films & shows. Already a Stremio default on every account.",
+      "categories": ["movies", "series", "public-domain"],
+      "adult": false,
+      "reliability": "medium",
+      "protected": false,
+      "manifest": "https://caching.stremio.net/publicdomainmovies.now.sh/manifest.json",
+      "config_note": "Confirmed shipped as an official default addon on fresh accounts (verified via addonCollectionGet)."
+    },
+    "kids-addon": {
+      "name": "Kids — age-rated catalogs",
+      "blurb": "Horror-free, age-rated kid catalogs (0+/6+/9+/12+) powered by TMDB ratings. Safe browsing.",
+      "categories": ["kids", "catalog"],
+      "adult": false,
+      "reliability": "low",
+      "protected": false,
+      "dead": true,
+      "manifest": "https://stremio-kids-addon.onrender.com/manifest.json",
+      "config_note": "Kids PACK REMOVED 2026-06-26: without this (dead) age-rated catalog, Kids can't deliver curated kid-safe browsing (public-domain alone isn't kid-curated). Hidden. SELF-HOST github.com/manuelford/stremio-kids-addon, set this URL, then restore an exclusive 'kids' pack [kids-addon, public-domain-movies]."
+    },
+
+    "adult-stremio": {
+      "name": "Adult Stremio Addon",
+      "blurb": "Big porn catalogs + metadata (posters, performers, scenes). Torrent-based — plays via seeders, instant with a debrid key.",
+      "categories": ["adult"],
+      "adult": true,
+      "reliability": "medium",
+      "debrid_boost": true,
+      "protected": false,
+      "manifest": "https://asa.00696900.xyz/manifest.json",
+      "config_note": "Playability-tested 2026-06-26: catalog+meta+stream OK, CORS:*; streams are torrent infoHash (P2P) -> needs seeders or debrid to play. 5 catalogs, type 'porn'."
+    },
+    "tpb-4k-porn": {
+      "name": "TPB 4K Porn",
+      "blurb": "Massive porn library (393 catalogs, up to 4K). Torrent-based — add a debrid key for instant playback.",
+      "categories": ["adult"],
+      "adult": true,
+      "reliability": "high",
+      "debrid_boost": true,
+      "too_large": true,
+      "protected": false,
+      "manifest": "https://tpb-adult-addon.click/manifest.json",
+      "config_note": "Playability-tested 2026-06-26: catalog+meta+stream OK, CORS:*; torrent streams carry infoHash + 22 trackers (plays via Stremio's built-in torrent client like Torrentio, instant with debrid). 393 catalogs, type 'Porn'."
+    },
+    "porn-tube": {
+      "name": "Porn Tube",
+      "blurb": "Porn tube catalog. Torrent-based — debrid recommended for smooth playback.",
+      "categories": ["adult"],
+      "adult": true,
+      "reliability": "medium",
+      "debrid_boost": true,
+      "protected": false,
+      "manifest": "https://dirty-pink.ers.pw/manifest.json",
+      "config_note": "Playability-tested 2026-06-26: catalog+meta+stream OK, CORS:*; torrent infoHash streams (P2P/debrid). id pw.ers.porntube, 1 catalog."
+    },
+    "hentai-roxxy": {
+      "name": "Hentai",
+      "blurb": "Hentai catalogs + streams. Plays free & direct — no debrid needed.",
+      "categories": ["adult", "anime"],
+      "adult": true,
+      "reliability": "high",
+      "protected": false,
+      "manifest": "https://hentai.roxxy-tech.com/manifest.json",
+      "config_note": "Playability-tested 2026-06-26: returns DIRECT http stream (pixeldrain CDN) -> plays instantly free. CORS:*, id id.hentai, 5 catalogs, type 'hentai'."
+    },
+    "chaturbate-cam": {
+      "name": "Chaturbate (live cams)",
+      "blurb": "Live cam shows. Quick configure (region/genre), then live HLS plays instantly.",
+      "categories": ["adult", "live"],
+      "adult": true,
+      "reliability": "medium",
+      "protected": false,
+      "needs_url": true,
+      "configure_url": "https://chaturbate.stremio.homes/configure/",
+      "config_note": "Live-cam addon (type Adult/Live/Cam). Bare manifest doesn't serve catalogs — needs the configure page to mint a working manifest. Once configured, performer streams are live HLS (direct, free)."
+    },
+    "stripchat-cam": {
+      "name": "Stripchat (live cams)",
+      "blurb": "Live cam shows incl. VR. Quick configure, then live HLS plays instantly.",
+      "categories": ["adult", "live"],
+      "adult": true,
+      "reliability": "medium",
+      "protected": false,
+      "needs_url": true,
+      "configure_url": "https://stripchat.stremio.homes/configure/",
+      "config_note": "Live-cam addon (type Adult/Live/Cam, incl. VR). Configure-based like Chaturbate; live HLS streams once configured."
+    }
+  },
+
+  "baseline": ["cinemeta", "opensubtitles", "torrentio", "imdb-catalogs", "rottentomatoes"],
+
+  "defaults": {
+    "_note": "Stremio seeds new accounts with these official addons. addonCollectionSet replaces the whole collection, so the frontend drops these transportUrls from the fetched defaults before appending the user's picks. Protected defaults (Cinemeta, Local Files) are always kept.",
+    "remove": [
+      "https://v3-channels.strem.io/manifest.json",
+      "https://watchhub.strem.io/manifest.json",
+      "https://opensubtitles.strem.io/stremio/v1"
+    ],
+    "remove_unless_legal": [
+      "https://caching.stremio.net/publicdomainmovies.now.sh/manifest.json"
+    ]
+  },
+
+  "_packs_model": "Packs are ADDITIVE — tapping several merges their addon sets on top of the baseline. 'Custom' exposes every addon as an individual toggle, pre-checked from the chosen packs. 'Everything' = select all non-adult, non-exclusive packs. Adult is its own age-gated pack. A pack with exclusive:true (Kids) cannot combine with anything: selecting it clears + locks all other packs, toggles, debrid and Custom, and its addon set REPLACES the baseline (no Torrentio).",
+
+  "packs": {
+    "movies-tv": {
+      "name": "Movies & TV",
+      "emoji": "🎬",
+      "tagline": "Mainstream films & series. What most people want.",
+      "recommended": true,
+      "default_on": true,
+      "adult": false,
+      "addons": ["streaming-catalogs"]
+    },
+    "anime": {
+      "name": "Anime",
+      "emoji": "🍥",
+      "tagline": "Kitsu + MAL discovery, anime-tuned streams, and AniList auto-tracking.",
+      "adult": false,
+      "addons": ["anime-kitsu", "anime-catalogs", "torrentio-anime", "animeo"]
+    },
+    "niche": {
+      "name": "Niche & Indie",
+      "emoji": "🎞️",
+      "tagline": "Deeper catalogs beyond the mainstream.",
+      "adult": false,
+      "addons": ["torrent-catalogs"]
+    },
+    "premium-4k": {
+      "name": "4K & Premium",
+      "emoji": "💎",
+      "tagline": "Only the highest-quality 4K/1080p releases. A debrid key is recommended (big files).",
+      "adult": false,
+      "addons": ["torrentio-4k"]
+    },
+    "extreme-horror": {
+      "name": "Extreme Horror",
+      "emoji": "🔪",
+      "tagline": "52 horror subgenres — slasher, gore, found-footage, cosmic dread & more.",
+      "adult": false,
+      "addons": ["scary-only"]
+    },
+    "adult": {
+      "name": "NSFW",
+      "emoji": "🔞",
+      "tagline": "18+ Content",
+      "adult": true,
+      "age_gate": true,
+      "addons": ["hentai-roxxy", "tpb-4k-porn", "adult-stremio", "porn-tube", "chaturbate-cam", "stripchat-cam"]
+    }
+  },
+
+  "quick_actions": {
+    "everything": {
+      "label": "Everything",
+      "emoji": "🌐",
+      "blurb": "Select all packs (adult stays gated)."
+    }
+  },
+
+  "toggles": {
+    "legal_mode": {
+      "label": "Free & legal only (public domain)",
+      "blurb": "Shows ONLY old public-domain films & shows and switches every torrent/streaming source OFF. A 100% legal, no-piracy setup.",
+      "warn": "This removes the sources most people actually want — you will NOT get new releases, popular movies or current shows. Leave it OFF unless you specifically want public-domain classics only.",
+      "default": false,
+      "strips_categories": ["movies", "series", "anime", "live", "sports", "adult", "horror", "documentary", "quality"],
+      "strips_addons": ["torrentio", "torrentio-anime", "torrentio-4k", "scary-only"],
+      "adds_addons": ["public-domain-movies"]
+    },
+    "quality": {
+      "label": "Result style",
+      "blurb": "How your streaming results are ordered when you tap a title.",
+      "default": "balanced",
+      "applies_to": ["torrentio", "torrentio-anime", "torrentio-4k"],
+      "modes": {
+        "balanced": "Balanced — a good mix of quality and availability. Best for most people.",
+        "quality": "Quality — fewer results, highest quality first (bigger files).",
+        "quantity": "Quantity — the most results, ordered by seeders (most likely to start fast)."
+      }
+    },
+    "max_quality": {
+      "label": "Max quality",
+      "blurb": "Cap the top resolution — handy for slow connections, mobile data, or older TVs.",
+      "default": "any",
+      "applies_to": ["torrentio", "torrentio-anime", "torrentio-4k"],
+      "modes": {
+        "any": { "label": "Any (incl. 4K)", "exclude": "" },
+        "1080p": { "label": "1080p max", "exclude": "4k" },
+        "720p": { "label": "720p max", "exclude": "4k,1080p" }
+      }
+    },
+    "debrid": {
+      "label": "Debrid key (optional)",
+      "blurb": "Paste a Real-Debrid / AllDebrid / Premiumize key for instant, buffer-free cached streams. Leave blank for free public torrents.",
+      "default": ""
+    },
+    "_omitted_filters": "Codec filtering (HEVC/x265), reliable audio-language priority, and custom private trackers are NOT possible via Torrentio's shareable URL. Users who need those should pick AIOStreams in Advanced — it filters by codec, language, resolution, size, seeders and more (debrid required)."
+  },
+
+  "email_gen": {
+    "_note": "Dice button on the email step. Stremio never sends a confirmation email, so a disposable address works fine. Pattern: {word}-{4 lowercase a-z}@{domain}. The word is picked at random from `words`.",
+    "domain": "stremiodoesntcare.lol",
+    "words": [
+      "popcorn", "binge", "matinee", "reel", "noir", "kaiju", "cinephile", "rewind",
+      "marathon", "subtitle", "director", "blockbuster", "indie", "midnight", "premiere",
+      "boxoffice", "screening", "grindhouse", "cliffhanger", "montage", "spoiler", "cameo",
+      "credits", "trailer", "matrix", "neo", "gandalf", "vader", "ronin", "samurai",
+      "couch", "remote", "snacks", "lazyday", "weekend", "sofa", "chill", "stream"
+    ]
+  }
+}

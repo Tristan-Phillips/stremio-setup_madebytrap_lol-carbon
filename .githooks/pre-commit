@@ -1,0 +1,64 @@
+#!/bin/sh
+# carbon-hook v1 pre-commit
+# Installed by carbon onboard (M3) / by hand during the migration bridge.
+# 3-layer secret gate, layer 1 (decisions #39, milestone-2 §C.1). Fail-closed:
+# a missing scanner blocks the commit rather than silently waving it through —
+# that silence is exactly how old carbon committed a credential.
+
+set -u
+
+fail() { echo "pre-commit: $1" >&2; exit 1; }
+
+# (a) gitleaks over staged changes
+command -v gitleaks >/dev/null 2>&1 || fail "gitleaks not installed — refusing to commit unscanned (install: https://github.com/gitleaks/gitleaks)"
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+    gitleaks git --staged --redact -v || fail "gitleaks found secret-shaped content in staged changes"
+else
+    # Unborn HEAD (the repo's FIRST commit): gitleaks' staged git-mode reports
+    # findings but exits 0 here (verified v8.30), silently defeating fail-closed
+    # at the most dangerous commit of a migration (AR-35). `gitleaks dir .`
+    # exit codes work but scan the RAW FILESYSTEM, ignoring .gitignore — that
+    # false-positives on every legitimately-gitignored .env sitting next to
+    # the repo (found live: grimoire_madebytrap_lol's own .env, 2026-07-15).
+    # Fix: materialize exactly what's in the INDEX (which already respects
+    # .gitignore, since `git add -A` put it there) into a scratch dir and
+    # scan THAT — same effective content as gitleaks git --staged would see,
+    # works with zero commits.
+    tmp="$(mktemp -d)"
+    git checkout-index -a --prefix="$tmp/"
+    gitleaks dir "$tmp" --redact -v
+    rc=$?
+    rm -rf "$tmp"
+    [ "$rc" -eq 0 ] || fail "gitleaks found secret-shaped content in staged changes (first-commit scan)"
+fi
+
+# (b) forbidden paths: key material and env files never belong in a repo;
+# data/ paths never belong in any project tree.
+staged=$(git diff --cached --name-only --diff-filter=ACR)
+for f in $staged; do
+    case "$f" in
+        *.key|*.pem|*.p12|*.pfx) fail "forbidden file type staged: $f" ;;
+        .env|*/.env) fail "env file staged: $f (use .env.example for shape)" ;;
+        *master.key*) fail "master key material staged: $f" ;;
+        # repo-ROOT data/ only: nested content dirs named data/ (glass/data/)
+        # are legitimate; the workspace runtime data/ lives outside repos anyway
+        data/*) fail "data/ path staged: $f (runtime state lives outside repos)" ;;
+    esac
+done
+
+# (c) carbon.toml [secrets] may declare NAMES only (needs = [...]); a long
+# quoted scalar assigned inside that section is secret-shaped.
+for f in $staged; do
+    case "$f" in
+        carbon.toml|*/carbon.toml)
+            git show ":$f" | awk '
+                /^\[secrets\]/ { insec=1; next }
+                /^\[/          { insec=0 }
+                insec && /= *"[^"]{16,}"/ { bad=1 }
+                END { exit bad }
+            ' || fail "$f: [secrets] must contain key NAMES only — a value belongs in the encrypted store (carbon secret set)"
+            ;;
+    esac
+done
+
+exit 0

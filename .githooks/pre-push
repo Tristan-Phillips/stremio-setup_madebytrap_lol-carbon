@@ -1,0 +1,26 @@
+#!/bin/sh
+# carbon-hook v1 pre-push
+# 3-layer secret gate, layer 2 (decisions #39, milestone-2 §C.1): history-aware
+# scan of exactly the commits about to leave the machine — catches anything
+# that bypassed pre-commit (--no-verify, hook added after the fact). Fail-closed.
+
+set -u
+
+fail() { echo "pre-push: $1" >&2; exit 1; }
+
+command -v gitleaks >/dev/null 2>&1 || fail "gitleaks not installed — refusing to push unscanned (install: https://github.com/gitleaks/gitleaks)"
+
+zero=0000000000000000000000000000000000000000
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha> per line
+while read -r _ local_sha _ remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue   # branch deletion; nothing leaves
+    if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha"                    # new branch: scan its full history
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    gitleaks detect --redact -v --log-opts="$range" || fail "gitleaks found secret-shaped content in commits being pushed ($range)"
+done
+
+exit 0

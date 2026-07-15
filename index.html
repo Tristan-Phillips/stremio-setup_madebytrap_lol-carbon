@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<title>Stremio, Sorted</title>
+<meta name="description" content="Enter an email, pick a vibe, tap go. Stremio sets itself up.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍿</text></svg>">
+<link rel="stylesheet" href="public/css/app.css?v=9">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body>
+<noscript><p class="noscript">This setup tool needs JavaScript. It runs entirely in your browser — your password is never sent to our server, only to Stremio.</p></noscript>
+
+<main class="wrap" aria-live="polite">
+
+  <header class="hero">
+    <div class="logo">🍿</div>
+    <h1 id="site-name">Stremio, Sorted</h1>
+    <p id="site-tagline" class="tagline">Loading…</p>
+  </header>
+
+  <!-- STEP 1 — EMAIL -->
+  <section class="step" id="step-email" data-step="1">
+    <h2>1. Your email</h2>
+    <p class="hint">I make a fresh Stremio account for you and load it up with addons. Use your own email - or tap 🎲 for a throwaway one (Stremio never sends a confirmation).</p>
+    <form id="email-form" novalidate autocomplete="off">
+      <div class="email-row">
+        <input type="email" id="email" name="email" inputmode="email" autocomplete="email"
+               placeholder="you@example.com" required spellcheck="false" autocapitalize="off">
+        <button type="button" class="dice" id="dice" title="Use a throwaway email" aria-label="Generate a throwaway email">🎲</button>
+      </div>
+      <p class="field-error" id="email-error" role="alert" hidden></p>
+      <button type="submit" class="btn primary">Next &rarr;</button>
+    </form>
+  </section>
+
+  <!-- STEP 2 — PICK -->
+  <section class="step" id="step-packs" data-step="2" hidden>
+    <h2>2. Pick what you want</h2>
+    <p class="hint">Tap as many as you like &mdash; they stack. Most people just want <strong>Movies &amp; TV</strong>.</p>
+
+    <div class="quick-row">
+      <button type="button" class="btn ghost" id="btn-everything">🌐 Everything</button>
+      <button type="button" class="btn ghost" id="btn-clear">Clear</button>
+    </div>
+
+    <div class="packs" id="packs"><!-- cards injected --></div>
+
+    <!-- Everything technical lives here so casual users aren't overwhelmed -->
+    <details class="advanced" id="advanced">
+      <summary>⚙️ Advanced options <span class="opt">(optional)</span></summary>
+
+      <label class="toggle" id="legal-wrap">
+        <input type="checkbox" id="legal-mode">
+        <span><strong id="legal-label">Free &amp; legal only</strong><small id="legal-blurb"></small></span>
+      </label>
+      <p class="toggle-warn" id="legal-warn" hidden></p>
+
+      <fieldset class="seg" id="quality-wrap">
+        <legend id="quality-label">Result style</legend>
+        <small class="seg-blurb" id="quality-blurb"></small>
+        <div class="seg-opts" id="quality-opts"><!-- radios injected --></div>
+      </fieldset>
+
+      <fieldset class="seg" id="max-quality-wrap">
+        <legend id="max-quality-label">Max quality</legend>
+        <small class="seg-blurb" id="max-quality-blurb"></small>
+        <div class="seg-opts" id="max-quality-opts"><!-- radios injected --></div>
+      </fieldset>
+
+      <div class="debrid" id="debrid-wrap">
+        <label for="debrid-key"><strong id="debrid-label">Debrid key (optional)</strong><small id="debrid-blurb"></small></label>
+        <div class="debrid-row">
+          <select id="debrid-provider" aria-label="Debrid provider"></select>
+          <input type="text" id="debrid-key" placeholder="paste key, or leave blank for free" spellcheck="false" autocomplete="off" autocapitalize="off">
+        </div>
+        <p class="debrid-cta" id="debrid-cta"></p>
+      </div>
+
+      <div class="custom-block">
+        <h3 class="adv-h">Pick individual add-ons</h3>
+        <div class="addon-list" id="addon-list"><!-- checkboxes injected --></div>
+        <p class="adv-note" id="adv-note"></p>
+      </div>
+    </details>
+
+    <div id="turnstile" class="ts-box"></div>
+
+    <div class="actions">
+      <button type="button" class="btn link" id="back-email">&larr; Back</button>
+      <button type="button" class="btn primary big" id="btn-go">Create my Stremio &rarr;</button>
+    </div>
+    <p class="field-error" id="go-error" role="alert" hidden></p>
+  </section>
+
+  <!-- STEP 3 — WORKING -->
+  <section class="step" id="step-go" data-step="3" hidden>
+    <div class="spinner" aria-hidden="true"></div>
+    <h2>Setting up&hellip;</h2>
+    <ul class="progress" id="progress"></ul>
+  </section>
+
+  <!-- STEP 4 — DONE -->
+  <section class="step" id="step-done" data-step="4" hidden>
+    <h2>✅ You're set up</h2>
+    <p class="apply-status" id="apply-status" role="status" hidden></p>
+    <p class="hint"><strong>This is a brand-new account.</strong> If Stremio is already logged in somewhere, <strong>log out first</strong>, then log in with the email &amp; password below — your add-ons are already on it.</p>
+
+    <div class="creds">
+      <div class="cred"><span>Email</span><code id="out-email"></code><button class="btn copy" data-copy="out-email">Copy</button></div>
+      <div class="cred"><span>Password</span><code id="out-pass"></code><button class="btn copy" data-copy="out-pass">Copy</button></div>
+    </div>
+    <p class="warn">⚠️ Save your password now &mdash; we can't recover it. We never stored it.</p>
+
+    <a class="btn primary big" id="open-stremio" href="https://web.stremio.com/#/intro?form=login" target="_blank" rel="noopener noreferrer">Open Stremio &amp; log in &rarr;</a>
+    <p class="done-simple">That's the whole thing — log in and enjoy. Everything below is optional.</p>
+
+    <details class="fallback" id="fallback-apps"><summary>📲 Get the app (Windows / Android / iPhone)</summary>
+      <div id="apps-grid" class="apps-grid"></div>
+      <div id="ios-guide" class="ios-guide"></div>
+    </details>
+
+    <details class="fallback" id="other-ways"><summary>🛟 Other ways to set up <span class="opt">(only if you want)</span></summary>
+      <div class="ow-sec"><h4>📱 On a phone / TV (scan a QR)</h4><div id="qr-list"></div></div>
+      <div class="ow-sec"><h4>➕ Install add-ons one by one</h4><div id="install-list"></div></div>
+      <div class="ow-sec"><h4>🔗 Copy add-on links</h4><div id="manual-list"></div></div>
+      <div class="ow-sec" id="fallback-configure" hidden><h4>⚙️ Extra add-ons that need their own setup</h4><div id="configure-list"></div></div>
+    </details>
+
+    <button type="button" class="btn link" id="restart">Set up another &rarr;</button>
+  </section>
+
+  <footer class="foot">
+    <p id="tally" class="tally"></p>
+    <p class="legal">Add-ons are third-party. You're responsible for what you stream. 18+ content is gated. Not affiliated with Stremio.</p>
+
+    <details class="legal-disclaimer" style="max-width: 650px; margin: 2rem auto; font-size: 0.7rem; color: rgba(255,255,255,0.45); text-align: left;">
+      <summary style="cursor: pointer; user-select: none; text-align: center; font-weight: 600; letter-spacing: 0.5px; opacity: 0.8;">Terms &amp; Limitation of Liability</summary>
+      
+      <div style="margin-top: 1rem; padding: 1.25rem; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; line-height: 1.6; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);">
+        <p style="margin: 0 0 0.75rem 0;">THIS SOFTWARE AND/OR SERVICE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.</p>
+        
+        <p style="margin: 0 0 0.75rem 0;">IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+        
+        <p style="margin: 0; color: rgba(255,255,255,0.6);"><strong>PURPOSE OF USE:</strong> This product and associated services are provided strictly for educational and entertainment purposes only. No guarantee of uptime, security, or suitability for production environments is offered or implied.</p>
+      </div>
+    </details>
+  </footer>
+
+</main>
+
+<!-- Reusable themed modal (replaces native confirm/alert) -->
+<div class="modal-overlay" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title"></h3>
+    <p id="modal-body"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" id="modal-cancel"></button>
+      <button type="button" class="btn primary" id="modal-ok"></button>
+    </div>
+  </div>
+</div>
+
+<script src="public/js/app.js?v=9" defer></script>
+</body>
+</html>
