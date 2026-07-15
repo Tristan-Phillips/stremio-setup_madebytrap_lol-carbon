@@ -10,10 +10,13 @@ accounts by hand under your `carbonarchive.com` aliasing.
   creation. Email + a generated password go straight from the browser to
   `api.strem.io` and **never touch our server** (verified: Stremio API + addon
   hosts all send `Access-Control-Allow-Origin: *`).
-- **Sidecar**: [`services/proxy/stremio-setup-svc`](../../../../services/proxy/stremio-setup-svc) —
-  Turnstile verify + per-IP rate-limit + the public "fun" pack tally. No PII.
+- **Sidecar**: `stremio-setup-svc` — Turnstile verify + per-IP rate-limit + the
+  public "fun" pack tally. No PII. **Not yet migrated into carbon_god** — still
+  lives in old carbon at `services/proxy/stremio-setup-svc`; this repo is
+  frontend-only until that's brought over as its own project.
 - **Edge**: Caddy block for `stremio-setup.madebytrap.lol` (static + `/api/*` →
-  sidecar), mounted in [`web/root/_edge`](../../../root/_edge).
+  sidecar). **Also not yet migrated** — old carbon's edge config lives at
+  `web/root/_edge`; carbon_god doesn't have an equivalent yet.
 
 ## Single source of truth
 
@@ -51,20 +54,24 @@ for kids), set the manifest, flip off `dead`, and re-add the pack.
 ## Before going live (config)
 
 - `public/js/app.js` → `CONFIG.turnstileSitekey` — **set** (`0x4AAAAAADraLSMn27eQpgep`, public).
-- `services/proxy/stremio-setup-svc/.env` → `TURNSTILE_SECRET` — **set** (gitignored). Never put it in `.env.example`.
+- Sidecar's `.env` → `TURNSTILE_SECRET` — set on the old-carbon instance
+  (gitignored there too). Never put it in `.env.example`.
 - `stremio-addons.json` → optional: AllDebrid/Premiumize referral ids (Real-Debrid `19347258`
   set) and a free **RPDB** key on `rottentomatoes` (else poster ratings blank).
 
 ## Deploy
 
+Static frontend only, in carbon_god:
+
 ```sh
-# sidecar (.env already holds TURNSTILE_SECRET)
-cd services/proxy/stremio-setup-svc && docker compose up -d --build
-# edge (picks up the static mount + Caddy route)
-cd ../../../web/root/_edge && docker compose up -d --build && docker compose exec edge caddy reload --config /etc/caddy/Caddyfile
+python3 -m http.server   # or any static file server
 ```
 
-Then add the Cloudflare Tunnel route: `stremio-setup.madebytrap.lol → http://web_edge:8080`.
+Full production deploy (Turnstile verification, rate-limiting, the live tally)
+needs the sidecar + edge config migrated in first — see Architecture above.
+The old-carbon deploy sequence (sidecar `docker compose up`, edge reload, then
+a Cloudflare Tunnel route to the edge container) still applies there until
+this project's backend half moves over.
 
 ## Licensing
 
