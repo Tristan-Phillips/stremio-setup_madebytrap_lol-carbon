@@ -24,13 +24,14 @@
 
   <!-- STEP 1 — EMAIL -->
   <section class="step" id="step-email" data-step="1">
-    <h2>1. Your email</h2>
-    <p class="hint">I make a fresh Stremio account for you and load it up with addons. Use your own email - or tap 🎲 for a throwaway one (Stremio never sends a confirmation).</p>
+    <h2>1. Pick an email</h2>
+    <p class="info-note">Stremio is a free streaming app — but it ships with no content. Add-ons are the sources that give it movies, shows &amp; anime. We create the account here so yours arrive pre-loaded before you even open the app.</p>
+    <p class="hint">A throwaway address has been generated — keep it, tap 🎲 to roll another, or clear the field and type your own. Stremio never sends a confirmation email.</p>
     <form id="email-form" novalidate autocomplete="off">
       <div class="email-row">
         <input type="email" id="email" name="email" inputmode="email" autocomplete="email"
                placeholder="you@example.com" required spellcheck="false" autocapitalize="off">
-        <button type="button" class="dice" id="dice" title="Use a throwaway email" aria-label="Generate a throwaway email">🎲</button>
+        <button type="button" class="dice" id="dice" title="Roll a new throwaway address" aria-label="Roll a new throwaway address">🎲</button>
       </div>
       <p class="field-error" id="email-error" role="alert" hidden></p>
       <button type="submit" class="btn primary">Next &rarr;</button>
@@ -135,7 +136,7 @@
 
   <footer class="foot">
     <p id="tally" class="tally"></p>
-    <p class="legal">Add-ons are third-party. You're responsible for what you stream. 18+ content is gated. Not affiliated with Stremio.</p>
+    <p class="legal">Add-ons are third-party. You're responsible for what you stream. Not affiliated with Stremio.</p>
 
     <details class="legal-disclaimer" style="max-width: 650px; margin: 2rem auto; font-size: 0.7rem; color: rgba(255,255,255,0.45); text-align: left;">
       <summary style="cursor: pointer; user-select: none; text-align: center; font-weight: 600; letter-spacing: 0.5px; opacity: 0.8;">Terms &amp; Limitation of Liability</summary>

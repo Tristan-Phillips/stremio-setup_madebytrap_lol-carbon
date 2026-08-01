@@ -42,6 +42,7 @@ async function init() {
   wireEvents();
   loadStats();
   mountTurnstile();
+  $('email').value = genThrowaway();
 }
 
 /* ---------- render: app downloads + iOS/VLC guide ---------- */
@@ -72,7 +73,8 @@ function fatal(msg) { const e = $('go-error'); if (e) { e.textContent = msg; e.h
 function renderPacks() {
   const wrap = $('packs'); wrap.textContent = '';
   for (const [id, p] of Object.entries(DATA.packs)) {
-    const card = el('button', 'pack' + (p.recommended ? ' rec' : '') + (p.adult ? ' adult' : ''));
+    if (p.adult) continue;
+    const card = el('button', 'pack' + (p.recommended ? ' rec' : ''));
     card.type = 'button';
     card.dataset.pack = id;
     card.setAttribute('aria-pressed', 'false');
@@ -196,13 +198,11 @@ function updateDebridCta() {
 function renderCustom() {
   const list = $('addon-list'); list.textContent = '';
   for (const [id, a] of Object.entries(DATA.addons)) {
-    if (a.protected || a.dead) continue;        // defaults are always present; dead addons are hidden
+    if (a.protected || a.dead || a.adult || a.always_on) continue;
     const row = el('label', 'addon-row'); row.dataset.addon = id;
-    if (a.adult) { row.dataset.adult = '1'; row.hidden = true; }   // hidden until Adult pack is on
     const cb = el('input'); cb.type = 'checkbox'; cb.value = id; cb.dataset.addon = id;
     const txt = el('span');
     const name = el('span', 'ar-name', a.name);
-    if (a.adult) name.append(badge('adult', '18+'));
     if (a.debrid_only) name.append(badge('debrid', 'debrid'));
     else if (a.debrid_boost) name.append(badge('debrid', 'debrid+'));
     if (a.reliability === 'low') name.append(badge('flaky', 'flaky'));
@@ -612,10 +612,11 @@ const rndInt = (n) => { const a = new Uint32Array(1); crypto.getRandomValues(a);
 
 // Disposable email: {word}-{4 lowercase}@{domain}. Stremio never sends a confirmation.
 function genThrowaway() {
-  const g = (DATA && DATA.email_gen) || { domain: 'stremiodoesntcare.lol', words: ['popcorn'] };
+  const g = (DATA && DATA.email_gen) || { domain: ['stremiodoesntcare.lol'], words: ['popcorn'] };
+  const domains = Array.isArray(g.domain) ? g.domain : [g.domain];
   const az = 'abcdefghijklmnopqrstuvwxyz';
   let tag = ''; for (let i = 0; i < 4; i++) tag += az[rndInt(26)];
-  return `${g.words[rndInt(g.words.length)]}-${tag}@${g.domain}`;
+  return `${g.words[rndInt(g.words.length)]}-${tag}@${domains[rndInt(domains.length)]}`;
 }
 
 // Themed confirm overlay (replaces native confirm/alert). Resolves true/false.

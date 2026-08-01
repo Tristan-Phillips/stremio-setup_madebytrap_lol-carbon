@@ -44,6 +44,7 @@
     "manifest_vs_assemble": "Most add-ons carry a static `manifest`. Torrentio instead carries `assemble` (base + providers + quality_modes); the frontend builds its URL and appends the chosen debrid param/key when supplied.",
     "needs_url": "needs_url:true means NO single shareable manifest (config-encoded or per-user key). These never auto-apply — they render as 'Configure & install' link-outs using `configure_url`.",
     "protected": "Cinemeta, OpenSubtitles v3 and Local Files are Stremio defaults flagged protected. addonCollectionSet REPLACES the whole collection, so the frontend preserves protected defaults and only prunes the ones listed under `defaults`.",
+    "always_on": "Torrentio carries always_on:true — distinct from protected (it's OUR baseline guarantee, not a Stremio-official default). It's already in `baseline` so every normal (non-legal-mode, non-exclusive-pack) resolution includes it regardless of pack/Custom picks; always_on additionally hides it from the Custom picker so the UI can't show a checkbox that looks toggleable but silently has no effect. Legal Mode still strips it (that's the toggle's entire purpose) and exclusive packs (Kids) still replace the baseline outright — always_on does not override either.",
     "dropped": "AniList Stream (aniliststream.edmit.in/<JWT>/manifest.json) was DROPPED — the URL embedded trap's personal AniList auth token, unsafe to ship publicly. Anime is covered by anime-kitsu + anime-catalogs + torrentio (nyaa providers)."
   },
 
@@ -88,7 +89,7 @@
         "recommended": false,
         "torrentio_param": "premiumize",
         "signup_url": "https://www.premiumize.me/",
-        "blurb": "Cloud + Usenet + filehosts. Best for adult/niche search."
+        "blurb": "Cloud + Usenet + filehosts. Best for niche search."
       }
     }
   },
@@ -120,6 +121,7 @@
       "adult": false,
       "reliability": "high",
       "protected": false,
+      "always_on": true,
       "assemble": {
         "base": "https://torrentio.strem.fun/",
         "providers": "yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,magnetdl,horriblesubs,nyaasi,tokyotosho,anidex",
@@ -135,6 +137,7 @@
       "blurb": "Browse by IMDb lists & charts.",
       "categories": ["catalog", "ratings"],
       "adult": false,
+      "always_on": true,
       "reliability": "high",
       "protected": false,
       "manifest": "https://1fe84bc728af-imdb-catalogs.baby-beamup.club/manifest.json"
@@ -154,6 +157,7 @@
       "blurb": "What's on Netflix, Disney+, Prime, HBO, Apple TV+, Paramount+, Peacock, Hulu, Crunchyroll.",
       "categories": ["catalog"],
       "adult": false,
+      "always_on": true,
       "reliability": "high",
       "protected": false,
       "manifest": "https://7a82163c306e-stremio-netflix-catalog-addon.baby-beamup.club/bmZ4LGRucCxhbXAsYXRwLGhibSxwbXAscGNwLGhsdSxjcnU6OjoxNzM1MzU5NTI4MjYx/manifest.json"
@@ -163,6 +167,7 @@
       "blurb": "Trending/popular catalogs sourced from torrent sites.",
       "categories": ["catalog"],
       "adult": false,
+      "always_on": true,
       "reliability": "medium",
       "protected": false,
       "manifest": "https://torrent-catalogs.strem.fun/manifest.json"
@@ -408,7 +413,7 @@
     }
   },
 
-  "baseline": ["cinemeta", "opensubtitles", "torrentio", "imdb-catalogs", "rottentomatoes"],
+  "baseline": ["cinemeta", "opensubtitles", "torrentio", "imdb-catalogs", "rottentomatoes", "streaming-catalogs", "torrent-catalogs"],
 
   "defaults": {
     "_note": "Stremio seeds new accounts with these official addons. addonCollectionSet replaces the whole collection, so the frontend drops these transportUrls from the fetched defaults before appending the user's picks. Protected defaults (Cinemeta, Local Files) are always kept.",
@@ -461,8 +466,10 @@
       "tagline": "52 horror subgenres — slasher, gore, found-footage, cosmic dread & more.",
       "adult": false,
       "addons": ["scary-only"]
-    },
-    "adult": {
+    }
+  },
+"unlisted_packs": {
+    "adult_unlisted": {
       "name": "NSFW",
       "emoji": "🔞",
       "tagline": "18+ Content",
@@ -476,7 +483,7 @@
     "everything": {
       "label": "Everything",
       "emoji": "🌐",
-      "blurb": "Select all packs (adult stays gated)."
+      "blurb": "Select all packs."
     }
   },
 
@@ -486,8 +493,8 @@
       "blurb": "Shows ONLY old public-domain films & shows and switches every torrent/streaming source OFF. A 100% legal, no-piracy setup.",
       "warn": "This removes the sources most people actually want — you will NOT get new releases, popular movies or current shows. Leave it OFF unless you specifically want public-domain classics only.",
       "default": false,
-      "strips_categories": ["movies", "series", "anime", "live", "sports", "adult", "horror", "documentary", "quality"],
-      "strips_addons": ["torrentio", "torrentio-anime", "torrentio-4k", "scary-only"],
+      "strips_categories": ["movies", "series", "anime", "live", "sports", "horror", "documentary", "quality"],
+      "strips_addons": ["torrentio", "torrentio-anime", "torrentio-4k", "scary-only", "torrent-catalogs"],
       "adds_addons": ["public-domain-movies"]
     },
     "quality": {
@@ -522,7 +529,7 @@
 
   "email_gen": {
     "_note": "Dice button on the email step. Stremio never sends a confirmation email, so a disposable address works fine. Pattern: {word}-{4 lowercase a-z}@{domain}. The word is picked at random from `words`.",
-    "domain": "stremiodoesntcare.lol",
+    "domain": ["stremiodoesntcare.lol", "stremioemail.com", "stremioemail.net", "stremioemail.org", "noconfirmation.com", "noconfirmation.net", "noconfirmation.org"],
     "words": [
       "popcorn", "binge", "matinee", "reel", "noir", "kaiju", "cinephile", "rewind",
       "marathon", "subtitle", "director", "blockbuster", "indie", "midnight", "premiere",
