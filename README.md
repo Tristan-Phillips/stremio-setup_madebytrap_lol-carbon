@@ -7,9 +7,9 @@
 <img src="https://img.shields.io/badge/Bot%20protection-Turnstile-f38020?style=for-the-badge&logo=cloudflare&logoColor=white" />
 <img src="https://img.shields.io/badge/AI--assisted-development-lightgrey?style=for-the-badge&logo=openai&logoColor=white" />
 
-Self-service Stremio setup. Visitor enters their own email or generates one randomly, picks packs, taps go - the page creates a Stremio account and loads the add-ons.
+A streamlined, one-tap configuration tool for Stremio. Whether you are setting it up for yourself or helping friends and family who aren't tech-savvy, this handles the heavy lifting. Just enter an email (or let it generate a random one), select your content packs, and tap go. The tool automatically creates the account and pre-loads all the selected add-ons. 
 
-No more setting up accounts by hand for the less tech savy.
+No more manually configuring Stremio accounts one add-on at a time.
 
 > ⚠️ **AI Disclaimer:** Parts of this project (including code, documentation, and/or assets) were developed with the assistance of AI tools. Review and use accordingly.
 
@@ -18,18 +18,18 @@ No more setting up accounts by hand for the less tech savy.
 <img src="docs/screenshots/overview.png" width="720" alt="App overview" />
 </div>
 
-<br>
+<br>selection
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-### Features
+### Core Features
 
-- 📧 **Self-service** - enter or generate an email, pick packs, done
-- 🔒 **Client-side account creation** - email + generated password go straight to `api.strem.io`, never touch our server
-- 🛡️ **Bot-gated** - Cloudflare Turnstile + per-IP rate limit in front of setup
-- 🎛️ **One JSON source of truth** - addons/packs/baseline defined once, edit + redeploy
+- 📧 **Frictionless Setup** - Type an email, pick your preferred content packs, and you are ready to stream.
+- 🔒 **Total Privacy (Client-Side)** - Your email and generated password communicate directly with Stremio (`api.strem.io`). Your credentials never touch our servers.
+- 🛡️ **Invisible Security** - Protected by Cloudflare Turnstile and strict per-IP rate limits to block bots without annoying users.
+- 🎛️ **Single Source of Truth** - All add-ons, packs, and baseline configurations are managed via a single JSON file for effortless updates.
 
 </td>
 <td width="50%" valign="top">
@@ -56,74 +56,77 @@ flowchart LR
     style C fill:#6e40c9,color:#fff,stroke:none
     style D fill:#6e40c9,color:#fff,stroke:none
     style E fill:#2ea44f,color:#fff,stroke:none
+
 ```
 
-> `C`→`D` is the only hop that leaves the browser: Turnstile verify + rate-limit go through the sidecar. 
+> `C`→`D` is the only hop that leaves the browser. The Turnstile verification and rate-limiting go through our sidecar service to ensure security.
 
->Account creation itself (`D`) talks directly to `api.strem.io` from the client - see Architecture below.
+> The actual account creation (`D`) communicates securely and directly from your browser to `api.strem.io`—see Architecture below.
 
 ---
 
 ## Architecture
 
-- **Frontend** (this dir, static): the whole wizard + **client-side** account creation. Email + a generated password go straight from the browser to `api.strem.io` and **never touch our server** (verified: Stremio API + addon hosts all send `Access-Control-Allow-Origin: *`).
-- **Sidecar**: `stremio-setup-svc` — Turnstile verify + per-IP rate-limit + the public "fun" pack tally. No PII.
-- **Edge**: Caddy block for `stremio-setup.madebytrap.lol` (static + `/api/*` → sidecar).
+* **Frontend** (this dir, static): The setup wizard and **client-side** account creation logic. Emails and generated passwords are sent straight from the user's browser to `api.strem.io`. They **never touch our server** (Verified: Stremio API + addon hosts successfully send `Access-Control-Allow-Origin: *`).
+* **Sidecar**: `stremio-setup-svc` — Handles Turnstile verification, per-IP rate-limiting, and the live "pack setup" counter. No personally identifiable information (PII) is processed here.
+* **Edge**: Caddy block for `stremio-setup.madebytrap.lol` (static + `/api/*` routed to the sidecar).
 
-## Single source of truth
+## Configuration & Management
 
-[`public/data/stremio-addons.json`](public/data/stremio-addons.json). Edit + redeploy. `addons` are defined once; `packs` reference them by id; `baseline` is always-on; `defaults.remove` strips unwanted Stremio default add-ons.
+[`public/data/stremio-addons.json`](https://www.google.com/search?q=public/data/stremio-addons.json) is the control center. Edit and redeploy to update the site instantly.
+`addons` are defined once globally; `packs` reference them by their ID; `baseline` dictates what is always installed; `defaults.remove` cleanly strips out any unwanted default Stremio add-ons.
 
-### Add / fix an add-on
-1. Drop its `manifest` URL into the addon entry.
-2. Remove `needs_url: true` (and `configure_url`) so it auto-applies instead of showing as a "Configure & install" link-out.
+### Adding or fixing an add-on
+
+1. Drop the add-on's `manifest` URL into its designated entry.
+2. Remove `needs_url: true` (and `configure_url`) so the add-on automatically applies in the background, rather than prompting the user with a "Configure & install" link.
 
 ---
 
-## Categories (6, all functionally verified 2026-06-26)
+## Content Categories (Verified 2026-06-26)
 
-Each was tested end-to-end: catalogs return items AND titles return playable streams.
+Each pack has been tested end-to-end: catalogs successfully load items, and titles successfully pull playable streams.
 
-| Preset | Works because | Notes |
-|---|---|---|
-| 🎬 Movies & TV | Streaming Catalogs + Torrentio (50 streams) | the default |
-| 🍥 Anime | Kitsu/MAL catalogs + Torrentio-Anime (50 streams) + AniList tracking | |
-| 🎞️ Niche & Indie | Torrent Catalogs + baseline Torrentio | |
-| 💎 4K & Premium | Torrentio tuned to 1080p+/4K only | debrid recommended (big files) |
-| 🔪 Extreme Horror | Scary Only (52 subgenre catalogs) + Torrentio (50 streams) | |
-| 🔞 Adult | Hentai (direct), TPB/AdultStremio/PornTube (torrent/debrid), cams (configure) | age-gated |
+| Preset | How it Works | Notes |
+| --- | --- | --- |
+| 🎬 Movies & TV | Streaming Catalogs + Torrentio (50 streams) | The default recommendation |
+| 🍥 Anime | Kitsu/MAL catalogs + Torrentio-Anime (50 streams) + AniList tracking |  |
+| 🎞️ Niche & Indie | Torrent Catalogs + baseline Torrentio |  |
+| 💎 4K & Premium | Torrentio tuned exclusively to 1080p+ and 4K | Debrid highly recommended for large files |
+| 🔪 Extreme Horror | Scary Only (52 subgenre catalogs) + Torrentio (50 streams) |  |
 
 ---
 
 ## Run locally
 
-Static frontend only - serve the repo root with any static file server:
+To test the static frontend locally, simply serve the repository root using any static file server:
 
 ```sh
 npx serve .
 # or
 npx http-server .
-# or, if you have Python installed
+# or, utilizing Python
 python3 -m http.server
+
 ```
 
-Then open the printed local URL (e.g. `http://localhost:8000`).
+Then open the provided local URL (e.g., `http://localhost:8000`).
 
-Full production deploy (Turnstile verification, rate-limiting, the live tally) needs the sidecar + edge config migrated in first.
+*Note: A full production deployment (which includes Turnstile verification, rate-limiting, and the live tally) requires the sidecar and edge configuration to be running.*
 
 ---
 
 ## Tech stack
 
 | Dependency | Purpose | License |
-| ---------- | ------- | ------- |
-| [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) | Bot-check widget, loaded from Cloudflare's CDN | proprietary (Cloudflare) |
-| [api.strem.io](https://github.com/Stremio/stremio-api) | Direct client-side account creation + add-on install | third-party, Stremio |
-| Vanilla JS (`public/js/app.js`) | Wizard logic, no framework | - |
+| --- | --- | --- |
+| [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) | Bot-check widget, loaded safely via Cloudflare's CDN | Proprietary (Cloudflare) |
+| [api.strem.io](https://github.com/Stremio/stremio-api) | Facilitates direct client-side account creation and add-on installation | Third-party, Stremio |
+| Vanilla JS (`public/js/app.js`) | Core wizard logic, keeping things fast with zero framework bloat | - |
 
-Turnstile's widget script is the only third-party network dependency at runtime - everything else in the wizard is plain HTML/CSS/JS talking straight to Stremio's public API.
+The Cloudflare Turnstile script is the only third-party network dependency loaded at runtime. Everything else operates purely via plain HTML/CSS/JS communicating directly with Stremio's public API.
 
-## Structure
+## Directory Structure
 
 ```
 ├── index.html
@@ -135,19 +138,22 @@ Turnstile's widget script is the only third-party network dependency at runtime 
 ├── custom/
 │   └── addons/thelist/
 └── docs/screenshots/
+
 ```
 
 ---
 
 ## Licensing
 
-| Scope                                        | License                                  |
-| --------------------------------------------- | ----------------------------------------- |
-| Code (HTML/CSS/JS) written for this project   | [GNU AGPLv3](LICENSE)                    |
-| Content - copy, branding, curated add-on lists | © Tristan Phillips, all rights reserved  |
+| Scope | License |
+| --- | --- |
+| Code (HTML/CSS/JS) written for this project | [GNU AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html) |
+| Content - copy, branding, curated add-on lists | © Trap, all rights reserved |
 
-> Not covered by the code license; no reuse of copy, branding, or the curated add-on lists without permission.
+> **Note:** The AGPLv3 license covers the codebase only.
 
 ## Disclaimer
 
-This project is provided for **educational and entertainment purposes only**. It does not host, distribute, or serve any copyrighted content itself - it merely automates configuration of third-party Stremio add-ons that are publicly available. The maintainer(s) assume no responsibility or liability for how this tool is used, or for the content, legality, or availability of any third-party add-ons or streams accessed through it. Use at your own risk and in accordance with your local laws.
+This project is provided for **educational and entertainment purposes only**. It does not host, distribute, or serve any copyrighted content. It functions strictly to automate the configuration of third-party Stremio add-ons that are already publicly available on the internet. The maintainer(s) assume no responsibility or liability for how this tool is utilized, nor for the content, legality, or availability of any third-party add-ons or media streams accessed through it. Use at your own risk and strictly in accordance with your local laws.
+
+```
