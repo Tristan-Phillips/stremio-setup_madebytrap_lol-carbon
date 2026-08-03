@@ -73,7 +73,7 @@ flowchart LR
 
 ## Configuration & Management
 
-[`public/data/stremio-addons.json`](https://www.google.com/search?q=public/data/stremio-addons.json) is the control center. Edit and redeploy to update the site instantly.
+`public/data/stremio-addons.json` is the control center. Edit and redeploy to update the site instantly.
 `addons` are defined once globally; `packs` reference them by their ID; `baseline` dictates what is always installed; `defaults.remove` cleanly strips out any unwanted default Stremio add-ons.
 
 ### Adding or fixing an add-on
